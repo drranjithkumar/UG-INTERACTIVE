@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CTEV — Bony Pathoanatomy Animation</title>
+<style>
+  :root{
+    --primary:#0B4F6C;
+    --primary-dark:#07293A;
+    --teal:#14919B;
+    --mint:#40C9A2;
+    --accent:#F2542D;
+    --bg-soft:#F3F8F9;
+    --line:#D7E6E7;
+    --text:#1E293B;
+    --muted:#5B7280;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--primary-dark);
+    font-family: Calibri, "Segoe UI", Arial, sans-serif;
+    color:#fff;
+    overflow:hidden;
+  }
+  .stage{
+    position:relative;
+    width:100vw; height:100vh;
+    display:flex; flex-direction:column;
+  }
+  header{
+    padding: 18px 34px 8px 34px;
+    flex:0 0 auto;
+  }
+  .eyebrow{
+    font-size:12px; font-weight:700; letter-spacing:3px; color:var(--mint);
+    text-transform:uppercase; margin:0 0 4px 0;
+  }
+  h1{
+    font-family: Cambria, Georgia, serif;
+    font-size: 26px; margin:0; font-weight:700; color:#fff;
+  }
+  .main{
+    flex:1 1 auto;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap: 40px;
+    padding: 4px 34px;
+    min-height:0;
+  }
+  .panel{
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px;
+    display:flex; flex-direction:column; align-items:center;
+    height: 100%;
+  }
+  .panel-dorsal{ width: 46%; max-width:520px; }
+  .panel-lateral{ width: 24%; max-width:260px; }
+  .panel-label{
+    font-size:11px; font-weight:700; letter-spacing:2px; color:var(--teal);
+    text-transform:uppercase; margin-bottom:4px;
+  }
+  svg{ width:100%; height:100%; display:block; }
+  .bone{ transition: transform 1.1s cubic-bezier(.65,0,.35,1); transform-box: fill-box; }
+  .callout{ transition: opacity .6s ease; opacity:0; }
+  .callout.show{ opacity:1; }
+  .arrowline{ transition: opacity .6s ease, stroke-dashoffset 1s ease; opacity:0; }
+  .arrowline.show{ opacity:1; }
+  .legend{
+    flex:0 0 auto;
+    padding: 2px 34px 0 34px;
+    display:flex; gap:16px; flex-wrap:wrap; justify-content:center;
+    font-size:10.5px; color:#CFE8E3;
+  }
+  .legend span{ display:flex; align-items:center; gap:6px; }
+  .swatch{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  .caption-wrap{
+    flex:0 0 auto;
+    padding: 10px 34px 4px 34px;
+    text-align:center;
+  }
+  .stage-title{
+    font-family: Cambria, Georgia, serif;
+    font-size: 19px; font-weight:700; color: var(--mint); margin:0 0 4px 0;
+  }
+  .stage-text{
+    font-size: 14px; color:#E8F5F3; max-width: 900px; margin:0 auto; line-height:1.4;
+  }
+
+  .controls{
+    flex:0 0 auto;
+    padding: 12px 34px 20px 34px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .scrub{
+    display:flex; align-items:center; gap:10px;
+  }
+  .track{
+    position:relative; flex:1; height:6px; background:rgba(255,255,255,0.12); border-radius:4px; cursor:pointer;
+  }
+  .track-fill{
+    position:absolute; left:0; top:0; height:100%; background:var(--mint); border-radius:4px; width:0%;
+    transition: width .1s linear;
+  }
+  .dot{
+    position:absolute; top:50%; width:14px; height:14px; border-radius:50%;
+    background:var(--primary-dark); border:2.5px solid var(--mint);
+    transform:translate(-50%,-50%); cursor:pointer; transition: background .2s;
+  }
+  .dot.active{ background:var(--mint); }
+  .time{ font-size:11px; color:var(--muted); width:52px; text-align:center; }
+
+  .btnrow{ display:flex; align-items:center; justify-content:center; gap:14px; }
+  button{
+    background: var(--primary); color:#fff; border:none; border-radius: 8px;
+    padding: 9px 16px; font-size:13px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:7px;
+    font-family: inherit;
+    transition: background .15s;
+  }
+  button:hover{ background: var(--teal); }
+  button.ghost{ background: transparent; border:1px solid rgba(255,255,255,0.25); }
+  button.ghost:hover{ background: rgba(255,255,255,0.08); }
+  #playBtn{ min-width:118px; justify-content:center; background: var(--accent); }
+  #playBtn:hover{ background:#d8441f; }
+
+  .stagepill{
+    font-size:11.5px; color:var(--muted); text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <header>
+    <p class="eyebrow">CTEV &mdash; Congenital Talipes Equinovarus</p>
+    <h1>Bony Pathoanatomy — How the Foot Skeleton Gets Displaced</h1>
+  </header>
+
+  <div class="main">
+    <div class="panel panel-dorsal">
+      <div class="panel-label">Dorsal (Top) View — Right Foot</div>
+      <svg viewBox="0 0 400 520" id="dorsalSvg">
+        <!-- reference tibia/fibula mortise -->
+        <rect x="150" y="10" width="100" height="70" rx="10" fill="#123A4E" stroke="#1C7293" stroke-width="2"/>
+        <text x="200" y="50" text-anchor="middle" fill="#CFE8E3" font-size="11" font-family="Calibri">Tibia / Fibula</text>
+
+        <!-- normal outline ghost (always visible, faint) -->
+        <path id="normalGhost" d="M120,235 C95,255 90,300 100,340 C112,390 150,430 200,445 C250,460 300,450 315,415 C330,380 320,340 300,320 C280,300 260,270 240,240 C225,215 200,200 180,205 C155,210 130,220 120,235 Z"
+          fill="none" stroke="#3A6B7A" stroke-width="1.5" stroke-dasharray="4,5" opacity="0.55"/>
+
+        <!-- TALUS -->
+        <g id="talusGroup" class="bone">
+          <path d="M170,90 C155,92 148,110 152,130 C156,150 172,162 195,163 C218,164 234,150 236,128 C238,106 224,90 200,88 C190,87 180,88 170,90 Z"
+            fill="#0B4F6C" stroke="#CFE8E3" stroke-width="2"/>
+          <text x="194" y="130" text-anchor="middle" fill="#fff" font-size="13" font-weight="700" font-family="Calibri">Talus</text>
+        </g>
+
+        <!-- NAVICULAR -->
+        <g id="navGroup" class="bone">
+          <ellipse cx="196" cy="188" rx="30" ry="18" fill="#14919B" stroke="#E8F5F3" stroke-width="2"/>
+          <text x="196" y="192" text-anchor="middle" fill="#fff" font-size="11" font-weight="700" font-family="Calibri">Navicular</text>
+        </g>
+
+        <!-- CALCANEUS (contains cuboid as child) -->
+        <g id="calcGroup" class="bone">
+          <path d="M205,150 C240,155 268,175 278,210 C288,248 278,290 248,308 C222,323 198,315 188,290 C178,265 186,235 202,210 C212,193 205,168 205,150 Z"
+            fill="#1C7293" stroke="#CFE8E3" stroke-width="2"/>
+          <text x="235" y="238" text-anchor="middle" fill="#fff" font-size="12" font-weight="700" font-family="Calibri">Calcaneus</text>
+
+          <!-- CUBOID nested so it inherits calcaneus transform, plus own extra transform -->
+          <g id="cuboidGroup" class="bone">
+            <rect x="222" y="180" width="42" height="34" rx="6" fill="#40C9A2" stroke="#07293A" stroke-width="2"/>
+            <text x="243" y="201" text-anchor="middle" fill="#07293A" font-size="10.5" font-weight="700" font-family="Calibri">Cuboid</text>
+          </g>
+        </g>
+
+        <!-- FOREFOOT block (metatarsals) -->
+        <g id="forefootGroup" class="bone">
+          <path d="M150,235 L242,222 C258,270 262,330 250,385 C240,430 210,460 190,462 C165,464 145,440 138,400 C130,355 132,300 140,265 Z"
+            fill="#F2542D" fill-opacity="0.18" stroke="#F2542D" stroke-width="2"/>
+          <text x="192" y="345" text-anchor="middle" fill="#F7CDBF" font-size="12" font-weight="700" font-family="Calibri">Metatarsals</text>
+        </g>
+
+        <!-- callouts -->
+        <g id="c1" class="callout">
+          <line x1="240" y1="120" x2="300" y2="95" stroke="#F2542D" stroke-width="1.5"/>
+          <text x="303" y="92" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">Neck deviates medial + plantarward</text>
+        </g>
+        <g id="c2" class="callout">
+          <line x1="255" y1="270" x2="330" y2="260" stroke="#F2542D" stroke-width="1.5"/>
+          <text x="333" y="257" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">Rotates medially,</text>
+          <text x="333" y="271" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">tilts into varus</text>
+        </g>
+        <g id="c3" class="callout">
+          <line x1="150" y1="180" x2="60" y2="150" stroke="#F2542D" stroke-width="1.5"/>
+          <text x="15" y="145" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">Medial subluxation</text>
+          <text x="15" y="159" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">onto talar head</text>
+        </g>
+        <g id="c4" class="callout">
+          <line x1="215" y1="205" x2="150" y2="175" stroke="#F2542D" stroke-width="1.5"/>
+          <text x="12" y="172" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">Subluxates medially</text>
+          <text x="12" y="186" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">on calcaneus</text>
+        </g>
+        <g id="c5" class="callout">
+          <line x1="150" y1="380" x2="70" y2="410" stroke="#F2542D" stroke-width="1.5"/>
+          <text x="8" y="428" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">Forefoot adducts —</text>
+          <text x="8" y="442" fill="#F2A29A" font-size="11" font-family="Calibri" font-weight="700">"bean-shaped" foot</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="panel panel-lateral">
+      <div class="panel-label">Lateral View — Equinus &amp; Cavus</div>
+      <svg viewBox="0 0 300 340" id="lateralSvg">
+        <path d="M 108 10 L 188 10 L 192 205 L 112 208 Z" fill="#123A4E" stroke="#1C7293" stroke-width="3"/>
+        <g id="latFootGroup" style="transform-origin: 150px 208px; transition: transform 1.3s cubic-bezier(.65,0,.35,1);">
+          <path d="M 112 208
+                   C 100 210, 88 218, 100 235
+                   C 108 246, 118 250, 130 262
+                   C 140 272, 158 280, 180 282
+                   C 205 284, 222 280, 228 268
+                   C 232 258, 222 250, 205 246
+                   C 178 240, 150 232, 130 218
+                   C 122 213, 118 209, 112 208
+                   Z"
+                fill="#F2542D" fill-opacity="0.22" stroke="#F2542D" stroke-width="3"/>
+        </g>
+        <line x1="40" y1="284" x2="300" y2="284" stroke="#3A6B7A" stroke-width="3" stroke-dasharray="2,10"/>
+        <text x="150" y="315" text-anchor="middle" fill="#CFE8E3" font-size="11" font-family="Calibri">ground</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="legend" id="legend">
+    <span><i class="swatch" style="background:#0B4F6C"></i>Talus</span>
+    <span><i class="swatch" style="background:#14919B"></i>Navicular</span>
+    <span><i class="swatch" style="background:#1C7293"></i>Calcaneus</span>
+    <span><i class="swatch" style="background:#40C9A2"></i>Cuboid</span>
+    <span><i class="swatch" style="background:#F2542D"></i>Metatarsals</span>
+    <span style="color:#8CA6AE"><i class="swatch" style="background:transparent;border:1.5px dashed #3A6B7A"></i>Normal outline</span>
+  </div>
+
+  <div class="caption-wrap">
+    <p class="stage-title" id="stageTitle">Normal Tarsal Alignment</p>
+    <p class="stage-text" id="stageText">Before deformity: the talus sits centred in the ankle mortise, the calcaneus lies beneath it in neutral, and the navicular / cuboid / metatarsals line up straight ahead. Press Play to see how CTEV displaces this, bone by bone.</p>
+  </div>
+
+  <div class="controls">
+    <div class="scrub">
+      <span class="time" id="stageLabel">0 / 5</span>
+      <div class="track" id="track">
+        <div class="track-fill" id="trackFill"></div>
+        <div class="dot" id="dot0" style="left:0%"></div>
+        <div class="dot" id="dot1" style="left:20%"></div>
+        <div class="dot" id="dot2" style="left:40%"></div>
+        <div class="dot" id="dot3" style="left:60%"></div>
+        <div class="dot" id="dot4" style="left:80%"></div>
+        <div class="dot" id="dot5" style="left:100%"></div>
+      </div>
+      <span class="time" id="timeLabel">0:00</span>
+    </div>
+    <div class="btnrow">
+      <button class="ghost" id="prevBtn">&#9664; Prev</button>
+      <button id="playBtn">&#9654; Play</button>
+      <button class="ghost" id="restartBtn">&#8635; Restart</button>
+      <button class="ghost" id="nextBtn">Next &#9654;</button>
+    </div>
+    <p class="stagepill">Click any dot on the timeline to jump to that stage of bony displacement.</p>
+  </div>
+</div>
+
+<script>
+const STAGE_SECONDS = 5;
+const stages = [
+  {
+    title: "Normal Tarsal Alignment",
+    text: "Before deformity: the talus sits centred in the ankle mortise, the calcaneus lies beneath it in neutral, and the navicular / cuboid / metatarsals line up straight ahead. Press Play to see how CTEV displaces this, bone by bone.",
+    talus:false, calc:false, cuboid:false, nav:false, forefoot:false, lateral:false,
+    callouts: []
+  },
+  {
+    title: "Step 1 · Talus — the primary bone",
+    text: "The talus has no muscle or tendon attachment, so it is entirely repositioned by the pull of contracted soft tissue. Its neck shortens and deviates medially and plantarward, while the body rotates within the mortise — producing fixed equinus.",
+    talus:true, calc:false, cuboid:false, nav:false, forefoot:false, lateral:true,
+    callouts: ["c1"]
+  },
+  {
+    title: "Step 2 · Calcaneus rotates & tilts",
+    text: "The calcaneus rotates medially beneath the talus and tilts into equinus and varus at the subtalar joint — this is what tucks the heel up and inward, making it feel small, high, and 'empty' on palpation.",
+    talus:true, calc:true, cuboid:false, nav:false, forefoot:false, lateral:true,
+    callouts: ["c1","c2"]
+  },
+  {
+    title: "Step 3 · Navicular subluxates medially",
+    text: "The navicular displaces medially, articulating with the medial talar head — in severe cases it approaches or nearly touches the medial malleolus. This is the anatomical basis of the deep medial crease seen clinically.",
+    talus:true, calc:true, cuboid:false, nav:true, forefoot:false, lateral:true,
+    callouts: ["c1","c2","c3"]
+  },
+  {
+    title: "Step 4 · Cuboid subluxates on the calcaneus",
+    text: "The cuboid subluxates medially on the calcaneus, adding further to forefoot adduction and completing the medial 'block rotation' of the midfoot beneath a relatively fixed talus.",
+    talus:true, calc:true, cuboid:true, nav:true, forefoot:false, lateral:true,
+    callouts: ["c1","c2","c3","c4"]
+  },
+  {
+    title: "Step 5 · Forefoot adducts — the composite deformity",
+    text: "The metatarsals follow the displaced midfoot into adduction and the forefoot pronates on the hindfoot (cavus). All bones remain individually normal in shape — they are simply rotated and displaced together as a block. This produces the classic 'kidney / bean-shaped' clubfoot.",
+    talus:true, calc:true, cuboid:true, nav:true, forefoot:true, lateral:true,
+    callouts: ["c1","c2","c3","c4","c5"]
+  }
+];
+
+let current = 0;
+let playing = false;
+let timer = null;
+let elapsed = 0; // ms into current stage while playing
+
+const talusGroup = document.getElementById('talusGroup');
+const calcGroup = document.getElementById('calcGroup');
+const cuboidGroup = document.getElementById('cuboidGroup');
+const navGroup = document.getElementById('navGroup');
+const forefootGroup = document.getElementById('forefootGroup');
+const latFootGroup = document.getElementById('latFootGroup');
+
+const stageTitle = document.getElementById('stageTitle');
+const stageText = document.getElementById('stageText');
+const stageLabel = document.getElementById('stageLabel');
+const timeLabel = document.getElementById('timeLabel');
+const trackFill = document.getElementById('trackFill');
+const playBtn = document.getElementById('playBtn');
+
+function setTransform(el, on, transformStr){
+  el.style.transformOrigin = "center";
+  el.style.transform = on ? transformStr : "translate(0,0) rotate(0deg)";
+}
+
+function render(stageIdx){
+  const s = stages[stageIdx];
+
+  setTransform(talusGroup, s.talus, "translate(-4px,4px) rotate(-7deg)");
+  setTransform(calcGroup, s.calc, "translate(-38px,-6px) rotate(-34deg)");
+  // cuboid: extra local slide in addition to inherited calcaneus transform
+  setTransform(cuboidGroup, s.cuboid, "translate(-34px,6px)");
+  setTransform(navGroup, s.nav, "translate(-58px,-2px) rotate(-6deg)");
+  setTransform(forefootGroup, s.forefoot, "translate(-46px,-10px) rotate(-24deg)");
+
+  latFootGroup.style.transform = s.lateral ? "rotate(34deg)" : "rotate(0deg)";
+
+  ["c1","c2","c3","c4","c5"].forEach(id=>{
+    document.getElementById(id).classList.toggle('show', s.callouts.includes(id));
+  });
+
+  stageTitle.textContent = s.title;
+  stageText.textContent = s.text;
+  stageLabel.textContent = stageIdx + " / 5";
+
+  for(let i=0;i<=5;i++){
+    document.getElementById('dot'+i).classList.toggle('active', i===stageIdx);
+  }
+  trackFill.style.width = (stageIdx/5*100) + "%";
+  updateTimeLabel(0);
+}
+
+function updateTimeLabel(msIntoStage){
+  const totalMs = current*STAGE_SECONDS*1000 + msIntoStage;
+  const totalSec = Math.floor(totalMs/1000);
+  const m = Math.floor(totalSec/60);
+  const sec = (totalSec%60).toString().padStart(2,'0');
+  timeLabel.textContent = m+":"+sec;
+}
+
+function goTo(idx, autoPlayContinues){
+  current = Math.max(0, Math.min(5, idx));
+  elapsed = 0;
+  render(current);
+  if(!autoPlayContinues){ stopPlaying(); }
+}
+
+function stepTick(){
+  elapsed += 100;
+  const frac = Math.min(1, elapsed/(STAGE_SECONDS*1000));
+  trackFill.style.width = ((current+frac)/5*100) + "%";
+  updateTimeLabel(elapsed);
+  if(elapsed >= STAGE_SECONDS*1000){
+    if(current >= 5){
+      stopPlaying();
+      return;
+    }
+    current += 1;
+    elapsed = 0;
+    render(current);
+  }
+}
+
+function startPlaying(){
+  if(current>=5){ current=0; render(0); }
+  playing = true;
+  playBtn.innerHTML = "&#10074;&#10074; Pause";
+  timer = setInterval(stepTick, 100);
+}
+function stopPlaying(){
+  playing = false;
+  playBtn.innerHTML = "&#9654; Play";
+  clearInterval(timer);
+}
+
+playBtn.addEventListener('click', ()=>{
+  if(playing){ stopPlaying(); } else { startPlaying(); }
+});
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  goTo(0,false);
+});
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  goTo(current+1,false);
+});
+document.getElementById('prevBtn').addEventListener('click', ()=>{
+  goTo(current-1,false);
+});
+for(let i=0;i<=5;i++){
+  document.getElementById('dot'+i).addEventListener('click', ()=> goTo(i,false));
+}
+document.getElementById('track').addEventListener('click', (e)=>{
+  const rect = e.currentTarget.getBoundingClientRect();
+  const frac = (e.clientX-rect.left)/rect.width;
+  goTo(Math.round(frac*5), false);
+});
+
+document.addEventListener('keydown', (e)=>{
+  if(e.code==='Space'){ e.preventDefault(); playing? stopPlaying(): startPlaying(); }
+  if(e.code==='ArrowRight'){ goTo(current+1,false); }
+  if(e.code==='ArrowLeft'){ goTo(current-1,false); }
+});
+
+render(0);
+</script>
+</body>
+</html>

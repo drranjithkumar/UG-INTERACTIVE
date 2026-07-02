@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTEV Challenge — The Clubfoot Quiz Game</title>
+<style>
+  :root{
+    --primary:#0B4F6C;
+    --primary-dark:#07293A;
+    --teal:#14919B;
+    --mint:#40C9A2;
+    --accent:#F2542D;
+    --gold:#F2C879;
+    --bg-soft:#F3F8F9;
+    --text:#1E293B;
+    --muted:#5B7280;
+    --danger:#E24A4A;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background: radial-gradient(circle at 15% 10%, #103C52 0%, #07293A 45%, #051D29 100%);
+    font-family: Calibri, "Segoe UI", Arial, sans-serif;
+    color:#fff;
+  }
+  #app{
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px 16px;
+  }
+  .card{
+    width:100%; max-width: 780px;
+    background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 20px;
+    padding: 34px 38px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    position:relative;
+    overflow:hidden;
+  }
+  .screen{ display:none; animation: fadeIn .45s ease; }
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  h1,h2,h3{ font-family: Cambria, Georgia, serif; margin:0; }
+  .eyebrow{ font-size:12px; font-weight:700; letter-spacing:3px; color:var(--mint); text-transform:uppercase; margin:0 0 8px 0;}
+  .muted{ color:var(--muted); }
+
+  /* ---------- START SCREEN ---------- */
+  #startScreen h1{ font-size:34px; color:#fff; margin-bottom:6px; }
+  #startScreen .tag{ font-size:15px; color:#CFE8E3; margin-bottom:22px; }
+  .rules{
+    background: rgba(255,255,255,0.04); border-radius:14px; padding:18px 20px; margin-bottom:22px;
+  }
+  .rules li{ margin-bottom:8px; font-size:13.5px; color:#E8F5F3; line-height:1.4; }
+  .rounds-preview{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:26px; }
+  .round-chip{
+    background: rgba(20,145,155,0.18); border:1px solid rgba(64,201,162,0.35);
+    border-radius:10px; padding:9px 13px; font-size:12px; color:var(--mint); font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  .bigbtn{
+    width:100%; padding:16px; border:none; border-radius:12px; font-size:17px; font-weight:700;
+    background: var(--accent); color:#fff; cursor:pointer; font-family:inherit;
+    transition: transform .12s, background .15s;
+  }
+  .bigbtn:hover{ background:#d8441f; transform: translateY(-1px); }
+  .bigbtn:active{ transform: translateY(0); }
+
+  /* ---------- HUD ---------- */
+  .hud{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; gap:12px;
+  }
+  .hud-left{ display:flex; align-items:center; gap:10px; }
+  .hud-badge{
+    background: rgba(255,255,255,0.06); border-radius:10px; padding:7px 12px; font-size:12.5px; font-weight:700;
+    display:flex; align-items:center; gap:6px;
+  }
+  #scoreBadge{ color:var(--gold); }
+  #streakBadge{ color:var(--accent); }
+  .progress-outer{
+    flex:1; height:8px; background: rgba(255,255,255,0.08); border-radius:5px; margin: 0 14px; overflow:hidden;
+  }
+  .progress-inner{ height:100%; background: linear-gradient(90deg, var(--teal), var(--mint)); width:0%; transition: width .3s ease; }
+
+  .timer-wrap{
+    display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#fff;
+  }
+  .timer-outer{ width:64px; height:8px; background: rgba(255,255,255,0.1); border-radius:5px; overflow:hidden;}
+  .timer-inner{ height:100%; background: var(--mint); width:100%; }
+  .timer-inner.warn{ background: var(--accent); }
+
+  /* ---------- ROUND INTRO ---------- */
+  .round-icon{
+    width:64px; height:64px; border-radius:16px; background: var(--primary);
+    display:flex; align-items:center; justify-content:center; font-size:30px; margin-bottom:16px;
+  }
+  #roundIntroScreen h2{ font-size:26px; color:#fff; margin-bottom:8px; }
+  #roundIntroScreen p{ font-size:14px; color:#CFE8E3; line-height:1.5; margin-bottom:24px; }
+
+  /* ---------- MCQ ---------- */
+  .qprompt{ font-size:19px; font-weight:700; line-height:1.4; margin: 6px 0 20px 0; color:#fff; }
+  .qtag{ font-size:11.5px; font-weight:700; letter-spacing:1.5px; color:var(--teal); text-transform:uppercase; margin-bottom:6px;}
+  .options{ display:flex; flex-direction:column; gap:11px; }
+  .opt{
+    text-align:left; padding:14px 16px; border-radius:11px; border:1.5px solid rgba(255,255,255,0.14);
+    background: rgba(255,255,255,0.03); color:#fff; font-size:14.5px; cursor:pointer; font-family:inherit;
+    transition: background .15s, border-color .15s, transform .1s;
+    display:flex; align-items:center; gap:12px;
+  }
+  .opt:hover:not(.locked){ background: rgba(20,145,155,0.16); border-color: var(--teal); }
+  .opt .letter{
+    width:26px; height:26px; border-radius:7px; background: rgba(255,255,255,0.08);
+    display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex:0 0 auto;
+  }
+  .opt.correct{ background: rgba(64,201,162,0.22); border-color: var(--mint); }
+  .opt.correct .letter{ background: var(--mint); color:var(--primary-dark); }
+  .opt.wrong{ background: rgba(226,74,74,0.2); border-color: var(--danger); }
+  .opt.wrong .letter{ background: var(--danger); }
+  .opt.locked{ cursor:default; }
+  .opt.dim{ opacity:0.45; }
+
+  .explain{
+    margin-top:16px; padding:13px 15px; border-radius:10px; background: rgba(255,255,255,0.05);
+    font-size:13px; color:#E8F5F3; line-height:1.45; display:none;
+  }
+  .explain.show{ display:block; animation: fadeIn .3s ease; }
+
+  .nextbar{ margin-top:20px; display:flex; justify-content:flex-end; }
+  .nextbtn{
+    padding:11px 22px; border-radius:9px; border:none; background:var(--teal); color:#fff;
+    font-weight:700; font-size:13.5px; cursor:pointer; font-family:inherit; display:none;
+  }
+  .nextbtn.show{ display:inline-flex; align-items:center; gap:6px; }
+  .nextbtn:hover{ background:var(--mint); color:var(--primary-dark); }
+
+  /* ---------- ORDER QUESTION ---------- */
+  .order-list{ display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+  .order-card{
+    display:flex; align-items:center; gap:12px; padding:13px 15px; border-radius:11px;
+    background: rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.14); cursor:pointer;
+    font-size:14px; color:#fff; transition: background .15s, border-color .15s;
+  }
+  .order-card:hover:not(.picked){ border-color: var(--teal); background: rgba(20,145,155,0.14); }
+  .order-card.picked{ opacity:0.55; cursor:default; }
+  .order-badge{
+    width:28px; height:28px; border-radius:50%; background: rgba(255,255,255,0.1); flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;
+  }
+  .order-card.picked .order-badge{ background: var(--mint); color:var(--primary-dark); }
+  .order-actions{ display:flex; gap:10px; margin-top:10px; }
+  .ghostbtn{
+    padding:9px 16px; border-radius:8px; background:transparent; border:1px solid rgba(255,255,255,0.25);
+    color:#fff; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;
+  }
+  .ghostbtn:hover{ background: rgba(255,255,255,0.08); }
+
+  /* ---------- ROUND RESULT ---------- */
+  #roundResultScreen{ text-align:center; }
+  .round-score-big{ font-size:46px; font-weight:700; color:var(--gold); font-family:Cambria,serif; margin:10px 0; }
+
+  /* ---------- FINAL ---------- */
+  #finalScreen{ text-align:center; }
+  .trophy{ font-size:56px; margin-bottom:6px; }
+  .final-rank{ font-size:24px; font-weight:700; color:var(--mint); font-family:Cambria,serif; margin-bottom:4px;}
+  .final-score{ font-size:52px; font-weight:700; color:#fff; font-family:Cambria,serif; }
+  .final-sub{ font-size:13px; color:var(--muted); margin-bottom:22px; }
+  .breakdown{ display:flex; flex-direction:column; gap:8px; margin: 20px 0; text-align:left; }
+  .breakdown-row{
+    display:flex; justify-content:space-between; align-items:center; padding:10px 14px;
+    background: rgba(255,255,255,0.04); border-radius:9px; font-size:13px;
+  }
+  .breakdown-row b{ color:var(--gold); }
+  .final-actions{ display:flex; gap:10px; margin-top:10px; }
+  .final-actions button{ flex:1; }
+
+  canvas#confetti{ position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:50; }
+
+  footer.credit{ text-align:center; margin-top:16px; font-size:11px; color:rgba(255,255,255,0.3); }
+
+  @media (max-width:600px){
+    .card{ padding:24px 20px; }
+    #startScreen h1{ font-size:26px; }
+    .qprompt{ font-size:16.5px; }
+    .round-score-big{ font-size:36px; }
+    .final-score{ font-size:40px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti"></canvas>
+
+<div id="app">
+  <div class="card">
+
+    <!-- START SCREEN -->
+    <div class="screen active" id="startScreen">
+      <p class="eyebrow">Orthopaedics &middot; MBBS Final Year</p>
+      <h1>🦶 CTEV Challenge</h1>
+      <p class="tag">The Clubfoot Quiz Game — race the clock across 5 rounds covering deformity, pathoanatomy, the Ponseti sequence, diagnosis, and surgery by age.</p>
+
+      <div class="rounds-preview">
+        <span class="round-chip">1 · Know Your Clubfoot</span>
+        <span class="round-chip">2 · Bony Detective</span>
+        <span class="round-chip">3 · Sequence It Right</span>
+        <span class="round-chip">4 · Diagnosis Detective</span>
+        <span class="round-chip">5 · Match the Age to Surgery</span>
+      </div>
+
+      <div class="rules">
+        <li>⏱️ Each question has a <b>15&ndash;20 second</b> timer — answer fast for a speed bonus.</li>
+        <li>🔥 Chain correct answers for a <b>streak multiplier</b>.</li>
+        <li>🧠 Ordering rounds: tap the steps in the order you think is correct, then submit.</li>
+        <li>🏆 Finish all 5 rounds to get your final rank, from "Back to the Books" to "Master Orthopod."</li>
+      </div>
+
+      <button class="bigbtn" id="startBtn">▶ Start the Challenge</button>
+    </div>
+
+    <!-- ROUND INTRO SCREEN -->
+    <div class="screen" id="roundIntroScreen">
+      <div class="round-icon" id="roundIcon">🦴</div>
+      <h2 id="roundIntroTitle">Round Title</h2>
+      <p id="roundIntroDesc">Round description</p>
+      <button class="bigbtn" id="roundBeginBtn">Begin Round</button>
+    </div>
+
+    <!-- MCQ QUESTION SCREEN -->
+    <div class="screen" id="mcqScreen">
+      <div class="hud">
+        <div class="hud-left">
+          <span class="hud-badge" id="scoreBadge">🏅 0 pts</span>
+          <span class="hud-badge" id="streakBadge">🔥 x1</span>
+        </div>
+        <div class="progress-outer"><div class="progress-inner" id="progressInner"></div></div>
+        <div class="timer-wrap">
+          <span id="timerNum">15</span>s
+          <div class="timer-outer"><div class="timer-inner" id="timerInner"></div></div>
+        </div>
+      </div>
+      <p class="qtag" id="mcqTag">ROUND 1 · QUESTION 1 OF 5</p>
+      <p class="qprompt" id="mcqPrompt">Question text goes here?</p>
+      <div class="options" id="mcqOptions"></div>
+      <div class="explain" id="mcqExplain"></div>
+      <div class="nextbar"><button class="nextbtn" id="mcqNextBtn">Next Question →</button></div>
+    </div>
+
+    <!-- ORDER QUESTION SCREEN -->
+    <div class="screen" id="orderScreen">
+      <div class="hud">
+        <div class="hud-left">
+          <span class="hud-badge" id="scoreBadgeO">🏅 0 pts</span>
+          <span class="hud-badge" id="streakBadgeO">🔥 x1</span>
+        </div>
+        <div class="progress-outer"><div class="progress-inner" id="progressInnerO"></div></div>
+        <div class="timer-wrap">
+          <span id="timerNumO">25</span>s
+          <div class="timer-outer"><div class="timer-inner" id="timerInnerO"></div></div>
+        </div>
+      </div>
+      <p class="qtag" id="orderTag">ROUND 3 · SEQUENCE</p>
+      <p class="qprompt" id="orderPrompt">Tap the steps in the correct order.</p>
+      <div class="order-list" id="orderList"></div>
+      <div class="order-actions">
+        <button class="ghostbtn" id="orderResetBtn">↺ Reset Order</button>
+        <button class="ghostbtn" id="orderSubmitBtn" style="background:var(--teal); border-color:var(--teal);">Submit Order ✓</button>
+      </div>
+      <div class="explain" id="orderExplain"></div>
+      <div class="nextbar"><button class="nextbtn" id="orderNextBtn">Next Question →</button></div>
+    </div>
+
+    <!-- ROUND RESULT SCREEN -->
+    <div class="screen" id="roundResultScreen">
+      <p class="eyebrow" id="roundResultLabel">ROUND 1 COMPLETE</p>
+      <h2 id="roundResultTitle">Nice work!</h2>
+      <div class="round-score-big" id="roundResultScore">+0 pts</div>
+      <p class="muted" id="roundResultDetail">You got X of Y correct.</p>
+      <button class="bigbtn" id="roundResultNextBtn" style="margin-top:18px;">Continue →</button>
+    </div>
+
+    <!-- FINAL SCREEN -->
+    <div class="screen" id="finalScreen">
+      <div class="trophy" id="finalTrophy">🏆</div>
+      <p class="eyebrow">Challenge Complete</p>
+      <div class="final-rank" id="finalRank">Master Orthopod</div>
+      <div class="final-score" id="finalScoreNum">0</div>
+      <p class="final-sub">total points</p>
+
+      <div class="breakdown" id="breakdownList"></div>
+
+      <div class="final-actions">
+        <button class="bigbtn" id="playAgainBtn">↺ Play Again</button>
+      </div>
+    </div>
+
+    <footer class="credit">CTEV Challenge · Dr Ranjith Kumar · Department of Orthopaedics · AIIMS Bibinagar · Built for MBBS Final Year revision</footer>
+  </div>
+</div>
+
+<script>
+/* ============================= QUESTION BANK ============================= */
+const ROUNDS = [
+  {
+    id:'r1', icon:'🩺', title:'Round 1 · Know Your Clubfoot',
+    desc:'Warm up with the basics — definitions, epidemiology, and terminology of CTEV.',
+    type:'mcq', timePerQ:15,
+    questions:[
+      {
+        prompt:'What does the CAVE acronym stand for in CTEV?',
+        options:['Cavus, Adductus, Varus, Equinus','Contracture, Ankylosis, Valgus, Eversion','Congenital, Acquired, Vascular, Extrinsic','Calcaneus, Ankle, Valgus, Elevation'],
+        correct:0,
+        explain:'CAVE = Cavus, Adductus, Varus, Equinus — the four fixed components of clubfoot, corrected in that exact order by Ponseti casting.'
+      },
+      {
+        prompt:'What is the approximate incidence of CTEV worldwide?',
+        options:['1 in 100 live births','1–2 per 1,000 live births','1 in 10,000 live births','1 in 50 live births'],
+        correct:1,
+        explain:'CTEV affects roughly 1–2 per 1,000 live births globally, making it one of the most common congenital musculoskeletal anomalies.'
+      },
+      {
+        prompt:'What is the typical male-to-female ratio in CTEV?',
+        options:['1:1 (equal)','1:2 (female predominance)','2:1 (male predominance)','5:1 (male predominance)'],
+        correct:2,
+        explain:'CTEV shows a roughly 2:1 male predominance.'
+      },
+      {
+        prompt:'A baby born to a parent with clubfoot has approximately what recurrence risk?',
+        options:['1 in 1000','1 in 100','1 in 10','1 in 2'],
+        correct:2,
+        explain:'Positive family history raises recurrence risk to roughly 1:10, supporting a genetic/polygenic contribution.'
+      },
+      {
+        prompt:'Roughly what proportion of CTEV cases are bilateral?',
+        options:['10%','25%','50%','90%'],
+        correct:2,
+        explain:'About half of all CTEV cases affect both feet.'
+      }
+    ]
+  },
+  {
+    id:'r2', icon:'🦴', title:'Round 2 · Bony Detective',
+    desc:'Test your knowledge of the pathoanatomy — which bone does what in CTEV.',
+    type:'mcq', timePerQ:15,
+    questions:[
+      {
+        prompt:'Which tarsal bone is considered the "primary" bone in CTEV because it has no muscle or tendon attachment?',
+        options:['Calcaneus','Navicular','Talus','Cuboid'],
+        correct:2,
+        explain:'The talus has no muscle attachment, so it is entirely repositioned by the pull of contracted surrounding soft tissue.'
+      },
+      {
+        prompt:'In CTEV, the calcaneus rotates ___ beneath the talus and tilts into varus.',
+        options:['Laterally','Medially','Posteriorly','Superiorly'],
+        correct:1,
+        explain:'The calcaneus rotates medially beneath the talus, tucking the heel up and inward — the anatomical basis of the "empty heel" sign.'
+      },
+      {
+        prompt:'The navicular subluxates medially to articulate abnormally with which structure?',
+        options:['The lateral malleolus','The medial talar head','The cuboid','The calcaneocuboid joint'],
+        correct:1,
+        explain:'The navicular displaces medially onto the medial talar head — sometimes nearly touching the medial malleolus in severe cases.'
+      },
+      {
+        prompt:'Which bone subluxates medially ON the calcaneus, adding to forefoot adduction?',
+        options:['Navicular','Cuboid','Cuneiform','Talus'],
+        correct:1,
+        explain:'The cuboid subluxates medially on the calcaneus, completing the medial "block rotation" of the midfoot.'
+      },
+      {
+        prompt:'True or False: In CTEV, the individual tarsal bones themselves are structurally malformed.',
+        options:['True — each bone is dysplastic','False — bones are normally shaped but displaced together as a block'],
+        correct:1,
+        explain:'A key teaching point: the bones are individually normal in shape — the deformity is due to their rotation/displacement as a block, driven by contracted soft tissue.'
+      }
+    ]
+  },
+  {
+    id:'r3', icon:'🔢', title:'Round 3 · Sequence It Right',
+    desc:'Two ordering challenges: the CAVE correction sequence, and the overall Ponseti treatment pathway. Tap the steps in the correct order.',
+    type:'order', timePerQ:25,
+    questions:[
+      {
+        prompt:'Arrange the CAVE deformity components in the ORDER the Ponseti method corrects them:',
+        steps:['Cavus — elevate the first ray / supinate the forefoot','Adductus — abduct the foot under the talar head','Varus — corrects as the calcaneus swings out','Equinus — corrected last, often needs tenotomy'],
+        explain:'Correction always follows C → A → V → E. Equinus is deliberately corrected last because forcing dorsiflexion too early blocks the calcaneus from swinging out from under the talus.'
+      },
+      {
+        prompt:'Arrange the overall Ponseti treatment pathway in the correct chronological order:',
+        steps:['Weekly manipulation & serial long-leg casting','Percutaneous Achilles tenotomy (if residual equinus)','Final cast for 3 weeks post-tenotomy','Foot Abduction Brace — full-time, then night-time wear'],
+        explain:'Casting corrects cavus/adductus/varus first; tenotomy then releases residual equinus; a final cast allows the tendon to heal in a lengthened position; the FAB brace then maintains correction long-term.'
+      }
+    ]
+  },
+  {
+    id:'r4', icon:'🔍', title:'Round 4 · Diagnosis Detective',
+    desc:'Clinical vignettes — can you tell true CTEV apart from its look-alikes?',
+    type:'mcq', timePerQ:18,
+    questions:[
+      {
+        prompt:'A newborn\'s foot is turned inward, but gentle pressure easily brings it to a fully corrected, even over-corrected, neutral position. Most likely diagnosis?',
+        options:['True CTEV','Postural (positional) clubfoot','Metatarsus adductus','Neurogenic clubfoot'],
+        correct:1,
+        explain:'Postural clubfoot results from intrauterine packing — the foot is supple and easily correctable, unlike the rigid true CTEV foot.'
+      },
+      {
+        prompt:'On examination, only the forefoot deviates medially ("bean-shaped" forefoot); the hindfoot and ankle are entirely normal with no varus or equinus. Diagnosis?',
+        options:['True CTEV','Postural clubfoot','Metatarsus adductus','Arthrogrypotic clubfoot'],
+        correct:2,
+        explain:'Metatarsus adductus involves only the forefoot — the hindfoot and ankle are normal, distinguishing it from true CTEV.'
+      },
+      {
+        prompt:'A foot is rigid, cannot be passively corrected to neutral, and shows all four CAVE components. This is:',
+        options:['Postural clubfoot','Metatarsus adductus','True CTEV','Normal newborn foot posture'],
+        correct:2,
+        explain:'Rigidity plus all four CAVE components (uncorrectable passively) is the hallmark of true CTEV.'
+      },
+      {
+        prompt:'A clubfoot noted alongside a myelomeningocele on the same infant\'s back is best classified as:',
+        options:['Idiopathic clubfoot','Postural clubfoot','Teratologic / non-idiopathic clubfoot','Metatarsus adductus'],
+        correct:2,
+        explain:'Clubfoot associated with an underlying neuromuscular or syndromic condition (like myelomeningocele) is termed teratologic/non-idiopathic — it tends to be stiffer and more relapse-prone.'
+      },
+      {
+        prompt:'Which examination finding should always prompt you to also check the hips in a newborn with clubfoot?',
+        options:['Association between CTEV and developmental dysplasia of the hip','Clubfoot always causes hip dislocation','Hip exam is not relevant to clubfoot','Clubfoot is caused by hip dysplasia'],
+        correct:0,
+        explain:'DDH can coexist with clubfoot, so both hips should always be examined (± ultrasound screening) in every newborn with CTEV.'
+      }
+    ]
+  },
+  {
+    id:'r5', icon:'🔪', title:'Round 5 · Match the Age to Surgery',
+    desc:'Apply the age-based surgical algorithm to real clinical scenarios.',
+    type:'mcq', timePerQ:18,
+    questions:[
+      {
+        prompt:'A 3-week-old presents with a typical idiopathic clubfoot. What is the first-line treatment?',
+        options:['Immediate posteromedial release','Triple arthrodesis','Ponseti manipulation & serial casting','Ilizarov external fixation'],
+        correct:2,
+        explain:'Ponseti casting is first-line at any age it can be started, but is especially effective and standard from the first weeks of life.'
+      },
+      {
+        prompt:'A 3-year-old develops recurrent dynamic forefoot supination during walking, but the foot is otherwise fully correctable passively. Best next step?',
+        options:['Triple arthrodesis','Tibialis anterior tendon transfer','Talectomy','Repeat extensive posteromedial release'],
+        correct:1,
+        explain:'Dynamic supination from unopposed tibialis anterior pull in an otherwise correctable foot is classically managed with TA tendon transfer to the lateral cuneiform.'
+      },
+      {
+        prompt:'A 6-year-old has a relapsed, moderately rigid clubfoot after prior Ponseti treatment. Which combination best fits the age-based algorithm?',
+        options:['Observation only','Soft-tissue release/lengthening ± lateral column shortening osteotomy','Below-knee amputation','Ponseti casting alone, no surgery ever needed'],
+        correct:1,
+        explain:'In the 2–8 year walking-age group, soft-tissue procedures ± a corrective osteotomy (e.g. lateral column shortening) are preferred over extensive joint surgery.'
+      },
+      {
+        prompt:'A neglected, rigid clubfoot in an 8-year-old (never treated) is being considered for gradual correction with minimal open surgery. Best option?',
+        options:['Ilizarov external fixator technique','Simple stretching exercises only','Below-knee cast for 1 week','Nerve block alone'],
+        correct:0,
+        explain:'The Ilizarov method uses gradual soft-tissue distraction ± minimal release, well suited to the ~5–10 year age group where remodelling potential still exists.'
+      },
+      {
+        prompt:'An adult with a severely rigid, arthritic, neglected clubfoot needs a definitive, stable, pain-free foot. Classic salvage procedure?',
+        options:['Percutaneous Achilles tenotomy alone','Triple arthrodesis','Foot abduction brace','Observation'],
+        correct:1,
+        explain:'Triple arthrodesis (fusion of subtalar, talonavicular & calcaneocuboid joints) is the historic mainstay salvage procedure for a rigid, arthritic, uncorrected adult clubfoot.'
+      }
+    ]
+  }
+];
+window.ROUNDS = ROUNDS; // exposed for debugging/testing
+let state = {
+  roundIdx: 0,
+  qIdx: 0,
+  score: 0,
+  streak: 0,
+  roundScore: 0,
+  roundCorrect: 0,
+  roundTotal: 0,
+  roundBreakdown: [],
+  timer: null,
+  timeLeft: 0,
+  timeTotal: 0,
+  answered: false,
+  orderPicked: [],
+};
+
+const screens = {
+  start: document.getElementById('startScreen'),
+  roundIntro: document.getElementById('roundIntroScreen'),
+  mcq: document.getElementById('mcqScreen'),
+  order: document.getElementById('orderScreen'),
+  roundResult: document.getElementById('roundResultScreen'),
+  final: document.getElementById('finalScreen'),
+};
+
+function showScreen(name){
+  Object.values(screens).forEach(s=>s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+/* ============================= FLOW CONTROL ============================= */
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  state.roundIdx = 0; state.score = 0;
+  beginRound();
+});
+
+function beginRound(){
+  const round = ROUNDS[state.roundIdx];
+  state.qIdx = 0;
+  state.roundScore = 0;
+  state.roundCorrect = 0;
+  state.roundTotal = round.questions.length;
+  document.getElementById('roundIcon').textContent = round.icon;
+  document.getElementById('roundIntroTitle').textContent = round.title;
+  document.getElementById('roundIntroDesc').textContent = round.desc;
+  showScreen('roundIntro');
+}
+
+document.getElementById('roundBeginBtn').addEventListener('click', ()=>{
+  const round = ROUNDS[state.roundIdx];
+  if(round.type === 'mcq'){ startMcqQuestion(); } else { startOrderQuestion(); }
+});
+
+/* ============================= TIMER HELPERS ============================= */
+function startTimer(totalSec, numEl, barEl, onExpire){
+  clearInterval(state.timer);
+  state.timeLeft = totalSec;
+  state.timeTotal = totalSec;
+  numEl.textContent = state.timeLeft;
+  barEl.style.width = '100%';
+  barEl.classList.remove('warn');
+  state.timer = setInterval(()=>{
+    state.timeLeft -= 1;
+    const pct = Math.max(0,(state.timeLeft/state.timeTotal)*100);
+    barEl.style.width = pct + '%';
+    numEl.textContent = Math.max(0,state.timeLeft);
+    if(state.timeLeft <= totalSec*0.3){ barEl.classList.add('warn'); }
+    if(state.timeLeft <= 0){
+      clearInterval(state.timer);
+      onExpire();
+    }
+  }, 1000);
+}
+
+/* ============================= MCQ ROUND ============================= */
+function startMcqQuestion(){
+  showScreen('mcq');
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+  state.answered = false;
+
+  document.getElementById('scoreBadge').textContent = '🏅 ' + state.score + ' pts';
+  document.getElementById('streakBadge').textContent = '🔥 x' + (1 + Math.min(state.streak,4));
+  document.getElementById('mcqTag').textContent = round.title.toUpperCase() + ' · QUESTION ' + (state.qIdx+1) + ' OF ' + round.questions.length;
+  document.getElementById('progressInner').style.width = ((state.qIdx)/round.questions.length*100) + '%';
+  document.getElementById('mcqPrompt').textContent = q.prompt;
+
+  const optsWrap = document.getElementById('mcqOptions');
+  optsWrap.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((opt,i)=>{
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.innerHTML = '<span class="letter">'+letters[i]+'</span><span>'+opt+'</span>';
+    btn.addEventListener('click', ()=> handleMcqAnswer(i, btn));
+    optsWrap.appendChild(btn);
+  });
+  document.getElementById('mcqExplain').classList.remove('show');
+  document.getElementById('mcqNextBtn').classList.remove('show');
+
+  startTimer(round.timePerQ, document.getElementById('timerNum'), document.getElementById('timerInner'), ()=>{
+    if(!state.answered){ handleMcqAnswer(-1, null); }
+  });
+}
+
+function handleMcqAnswer(selectedIdx, btnEl){
+  if(state.answered) return;
+  state.answered = true;
+  clearInterval(state.timer);
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+  const opts = document.querySelectorAll('#mcqOptions .opt');
+
+  opts.forEach((o,i)=>{
+    o.classList.add('locked');
+    if(i === q.correct){ o.classList.add('correct'); }
+    else if(i === selectedIdx){ o.classList.add('wrong'); }
+    else { o.classList.add('dim'); }
+  });
+
+  const isCorrect = selectedIdx === q.correct;
+  let pts = 0;
+  if(isCorrect){
+    const speedBonus = Math.round((state.timeLeft/state.timeTotal) * 50);
+    const streakMult = 1 + Math.min(state.streak,4)*0.25;
+    pts = Math.round((100 + speedBonus) * streakMult);
+    state.streak += 1;
+    state.roundCorrect += 1;
+  } else {
+    state.streak = 0;
+  }
+  state.score += pts;
+  state.roundScore += pts;
+
+  document.getElementById('scoreBadge').textContent = '🏅 ' + state.score + ' pts';
+  document.getElementById('streakBadge').textContent = '🔥 x' + (1 + Math.min(state.streak,4));
+
+  const explainEl = document.getElementById('mcqExplain');
+  explainEl.innerHTML = (isCorrect ? '✅ <b>Correct! +'+pts+' pts.</b> ' : (selectedIdx===-1? '⌛ <b>Time\'s up.</b> ' : '❌ <b>Not quite.</b> ')) + q.explain;
+  explainEl.classList.add('show');
+  document.getElementById('mcqNextBtn').classList.add('show');
+}
+
+document.getElementById('mcqNextBtn').addEventListener('click', ()=>{
+  const round = ROUNDS[state.roundIdx];
+  state.qIdx += 1;
+  if(state.qIdx >= round.questions.length){ finishRound(); }
+  else { startMcqQuestion(); }
+});
+
+/* ============================= ORDER ROUND ============================= */
+function startOrderQuestion(){
+  showScreen('order');
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+  state.answered = false;
+  state.orderPicked = [];
+
+  document.getElementById('scoreBadgeO').textContent = '🏅 ' + state.score + ' pts';
+  document.getElementById('streakBadgeO').textContent = '🔥 x' + (1 + Math.min(state.streak,4));
+  document.getElementById('orderTag').textContent = round.title.toUpperCase() + ' · SEQUENCE ' + (state.qIdx+1) + ' OF ' + round.questions.length;
+  document.getElementById('progressInnerO').style.width = ((state.qIdx)/round.questions.length*100) + '%';
+  document.getElementById('orderPrompt').textContent = q.prompt;
+
+  // shuffle display order but keep correct index reference
+  const shuffled = q.steps.map((text,correctIndex)=>({text,correctIndex}));
+  for(let i=shuffled.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  }
+  q._shuffled = shuffled;
+
+  renderOrderList();
+  document.getElementById('orderExplain').classList.remove('show');
+  document.getElementById('orderNextBtn').classList.remove('show');
+  document.getElementById('orderSubmitBtn').disabled = false;
+
+  startTimer(round.timePerQ, document.getElementById('timerNumO'), document.getElementById('timerInnerO'), ()=>{
+    if(!state.answered){ evaluateOrder(true); }
+  });
+}
+
+function renderOrderList(){
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+  const list = document.getElementById('orderList');
+  list.innerHTML = '';
+  q._shuffled.forEach((item, displayIdx)=>{
+    const div = document.createElement('div');
+    div.className = 'order-card';
+    const pickedPos = state.orderPicked.indexOf(displayIdx);
+    if(pickedPos !== -1){
+      div.classList.add('picked');
+      div.innerHTML = '<span class="order-badge">'+(pickedPos+1)+'</span><span>'+item.text+'</span>';
+    } else {
+      div.innerHTML = '<span class="order-badge">?</span><span>'+item.text+'</span>';
+      div.addEventListener('click', ()=>{
+        if(state.answered) return;
+        state.orderPicked.push(displayIdx);
+        renderOrderList();
+      });
+    }
+    list.appendChild(div);
+  });
+  const submitBtn = document.getElementById('orderSubmitBtn');
+  const allPicked = state.orderPicked.length === q.steps.length;
+  submitBtn.style.opacity = allPicked ? '1' : '0.4';
+  submitBtn.style.pointerEvents = allPicked ? 'auto' : 'none';
+}
+
+document.getElementById('orderResetBtn').addEventListener('click', ()=>{
+  if(state.answered) return;
+  state.orderPicked = [];
+  renderOrderList();
+});
+
+document.getElementById('orderSubmitBtn').addEventListener('click', ()=>{
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+  if(state.orderPicked.length < q.steps.length){ return; }
+  evaluateOrder(false);
+});
+
+function evaluateOrder(timedOut){
+  if(state.answered) return;
+  state.answered = true;
+  clearInterval(state.timer);
+  document.getElementById('orderSubmitBtn').disabled = true;
+
+  const round = ROUNDS[state.roundIdx];
+  const q = round.questions[state.qIdx];
+
+  let isCorrect = false;
+  // correctness check: the picked sequence's correctIndex values must be 0,1,2,3 in order
+  isCorrect = !timedOut && state.orderPicked.length === q.steps.length &&
+    state.orderPicked.every((displayIdx, pos) => q._shuffled[displayIdx].correctIndex === pos);
+
+  let pts = 0;
+  if(isCorrect){
+    const speedBonus = Math.round((state.timeLeft/state.timeTotal) * 80);
+    const streakMult = 1 + Math.min(state.streak,4)*0.25;
+    pts = Math.round((150 + speedBonus) * streakMult);
+    state.streak += 1;
+    state.roundCorrect += 1;
+  } else {
+    state.streak = 0;
+  }
+  state.score += pts;
+  state.roundScore += pts;
+
+  document.getElementById('scoreBadgeO').textContent = '🏅 ' + state.score + ' pts';
+  document.getElementById('streakBadgeO').textContent = '🔥 x' + (1 + Math.min(state.streak,4));
+
+  // reveal correct order visually
+  const list = document.getElementById('orderList');
+  list.innerHTML = '';
+  const correctOrdered = [...q._shuffled].sort((a,b)=>a.correctIndex-b.correctIndex);
+  correctOrdered.forEach((item,i)=>{
+    const div = document.createElement('div');
+    div.className = 'order-card picked';
+    div.style.borderColor = 'var(--mint)';
+    div.innerHTML = '<span class="order-badge" style="background:var(--mint); color:var(--primary-dark);">'+(i+1)+'</span><span>'+item.text+'</span>';
+    list.appendChild(div);
+  });
+
+  const explainEl = document.getElementById('orderExplain');
+  explainEl.innerHTML = (isCorrect ? '✅ <b>Correct order! +'+pts+' pts.</b> ' : (timedOut ? '⌛ <b>Time\'s up — here\'s the correct order:</b> ' : '❌ <b>Not quite — here\'s the correct order:</b> ')) + q.explain;
+  explainEl.classList.add('show');
+  document.getElementById('orderNextBtn').classList.add('show');
+}
+
+document.getElementById('orderNextBtn').addEventListener('click', ()=>{
+  const round = ROUNDS[state.roundIdx];
+  state.qIdx += 1;
+  if(state.qIdx >= round.questions.length){ finishRound(); }
+  else { startOrderQuestion(); }
+});
+
+/* ============================= ROUND RESULT ============================= */
+function finishRound(){
+  const round = ROUNDS[state.roundIdx];
+  state.roundBreakdown.push({
+    title: round.title,
+    score: state.roundScore,
+    correct: state.roundCorrect,
+    total: state.roundTotal
+  });
+
+  document.getElementById('roundResultLabel').textContent = round.title.toUpperCase() + ' COMPLETE';
+  const pct = state.roundCorrect/state.roundTotal;
+  let msg = 'Nice work!';
+  if(pct === 1) msg = 'Perfect round! 🌟';
+  else if(pct >= 0.6) msg = 'Solid round!';
+  else msg = 'Room to grow — review this topic!';
+  document.getElementById('roundResultTitle').textContent = msg;
+  document.getElementById('roundResultScore').textContent = '+' + state.roundScore + ' pts';
+  document.getElementById('roundResultDetail').textContent = 'You got ' + state.roundCorrect + ' of ' + state.roundTotal + ' correct in this round.';
+
+  showScreen('roundResult');
+}
+
+document.getElementById('roundResultNextBtn').addEventListener('click', ()=>{
+  state.roundIdx += 1;
+  if(state.roundIdx >= ROUNDS.length){ showFinal(); }
+  else { beginRound(); }
+});
+
+/* ============================= FINAL SCREEN ============================= */
+function showFinal(){
+  const totalQuestions = ROUNDS.reduce((a,r)=>a+r.questions.length,0);
+  const totalCorrect = state.roundBreakdown.reduce((a,r)=>a+r.correct,0);
+  const pct = totalCorrect/totalQuestions;
+
+  let rank, trophy;
+  if(pct >= 0.9){ rank='🏆 Master Orthopod — Ponseti-Level Precision!'; trophy='🏆'; }
+  else if(pct >= 0.7){ rank='🥈 Confident Clinician'; trophy='🥈'; }
+  else if(pct >= 0.5){ rank='🥉 Promising Intern — Revise & Retry'; trophy='🥉'; }
+  else { rank='📚 Back to the Books — CTEV Needs Another Look'; trophy='📚'; }
+
+  document.getElementById('finalTrophy').textContent = trophy;
+  document.getElementById('finalRank').textContent = rank;
+  document.getElementById('finalScoreNum').textContent = state.score;
+
+  const breakdownEl = document.getElementById('breakdownList');
+  breakdownEl.innerHTML = '';
+  state.roundBreakdown.forEach(r=>{
+    const div = document.createElement('div');
+    div.className = 'breakdown-row';
+    div.innerHTML = '<span>'+r.title+'</span><span><b>'+r.score+' pts</b> &middot; '+r.correct+'/'+r.total+' correct</span>';
+    breakdownEl.appendChild(div);
+  });
+
+  showScreen('final');
+  if(pct >= 0.7){ launchConfetti(); }
+}
+
+document.getElementById('playAgainBtn').addEventListener('click', ()=>{
+  state = { roundIdx:0, qIdx:0, score:0, streak:0, roundScore:0, roundCorrect:0, roundTotal:0, roundBreakdown:[], timer:null, timeLeft:0, timeTotal:0, answered:false, orderPicked:[] };
+  showScreen('start');
+});
+
+/* ============================= CONFETTI ============================= */
+function launchConfetti(){
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  if(!ctx){ return; } // canvas 2D not available — skip confetti gracefully
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+  const colors = ['#40C9A2','#14919B','#F2C879','#F2542D','#ffffff'];
+  const pieces = Array.from({length:140}, ()=>({
+    x: Math.random()*canvas.width,
+    y: -20 - Math.random()*canvas.height*0.5,
+    w: 6+Math.random()*6,
+    h: 8+Math.random()*8,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    speed: 2+Math.random()*3,
+    rot: Math.random()*360,
+    rotSpeed: (Math.random()-0.5)*10,
+    drift: (Math.random()-0.5)*2,
+  }));
+  let frame = 0;
+  function tick(){
+    frame++;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      p.y += p.speed; p.x += p.drift; p.rot += p.rotSpeed;
+      ctx.save();
+      ctx.translate(p.x,p.y);
+      ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if(frame < 260){ requestAnimationFrame(tick); }
+    else { ctx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  tick();
+}
+window.addEventListener('resize', ()=>{
+  const canvas = document.getElementById('confetti');
+  canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
