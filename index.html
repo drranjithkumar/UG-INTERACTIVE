@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CTEV Interactive — Undergraduate Learning</title>
+<style>
+  :root{
+    --primary:#0B4F6C;
+    --primary-dark:#07293A;
+    --teal:#14919B;
+    --mint:#40C9A2;
+    --accent:#F2542D;
+    --bg-soft:#F3F8F9;
+    --line:#D7E6E7;
+    --text:#1E293B;
+    --muted:#5B7280;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    background:linear-gradient(135deg,var(--primary-dark) 0%,var(--primary) 100%);
+    font-family: Calibri, "Segoe UI", Arial, sans-serif;
+    color:#fff;
+  }
+  .wrap{
+    max-width:1000px;
+    margin:0 auto;
+    padding:60px 24px 80px;
+  }
+  header{ text-align:center; margin-bottom:48px; }
+  header h1{
+    font-size:clamp(28px,5vw,44px);
+    margin:0 0 12px;
+    letter-spacing:0.5px;
+  }
+  header p{
+    color:var(--bg-soft);
+    opacity:0.85;
+    margin:0;
+    font-size:clamp(15px,1.6vw,18px);
+  }
+  .cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:24px;
+    margin-top:32px;
+  }
+  .card{
+    background:#fff;
+    color:var(--text);
+    border-radius:16px;
+    padding:28px;
+    text-decoration:none;
+    box-shadow:0 10px 30px rgba(0,0,0,0.25);
+    transition:transform 0.2s ease, box-shadow 0.2s ease;
+    display:flex;
+    flex-direction:column;
+    border-top:6px solid var(--teal);
+  }
+  .card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 16px 40px rgba(0,0,0,0.35);
+  }
+  .card.quiz{ border-top-color:var(--accent); }
+  .card .tag{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:var(--teal);
+    margin-bottom:12px;
+  }
+  .card.quiz .tag{ color:var(--accent); }
+  .card h2{
+    margin:0 0 10px;
+    font-size:22px;
+    color:var(--primary-dark);
+  }
+  .card p{
+    margin:0 0 20px;
+    color:var(--muted);
+    line-height:1.5;
+    flex:1;
+  }
+  .card .cta{
+    color:var(--teal);
+    font-weight:600;
+    font-size:15px;
+  }
+  .card.quiz .cta{ color:var(--accent); }
+  footer{
+    text-align:center;
+    margin-top:56px;
+    color:var(--bg-soft);
+    opacity:0.6;
+    font-size:13px;
+  }
+  footer a{ color:var(--mint); text-decoration:none; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>CTEV Interactive</h1>
+      <p>Congenital Talipes Equinovarus — undergraduate teaching resources by Dr. Ranjith Kumar</p>
+    </header>
+
+    <div class="cards">
+      <a class="card" href="CTEV.html">
+        <span class="tag">Animation</span>
+        <h2>Bony Pathoanatomy</h2>
+        <p>Interactive walkthrough of the deformity — talus, calcaneus, navicular, and cuboid relationships in the clubfoot.</p>
+        <span class="cta">Start the animation →</span>
+      </a>
+
+      <a class="card quiz" href="CTEV%20Interactive%20-%20Ranjith.html">
+        <span class="tag">Quiz</span>
+        <h2>The Clubfoot Challenge</h2>
+        <p>Test your understanding of CTEV assessment, Ponseti principles, and management through an interactive quiz.</p>
+        <span class="cta">Take the quiz →</span>
+      </a>
+    </div>
+
+    <footer>
+      Source: <a href="https://github.com/drranjithkumar/UG-INTERACTIVE">github.com/drranjithkumar/UG-INTERACTIVE</a>
+    </footer>
+  </div>
+</body>
+</html>
